@@ -4,7 +4,7 @@ from playwright.sync_api import Page
 from components.navigation.sidebar_list_item_component import SideBarListItemComponent
 import re
 
-class SideBarComponent(BaseComponent):
+class SidebarComponent(BaseComponent):
     def __init__(self, page: Page):
         super().__init__(page)
 
