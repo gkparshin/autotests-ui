@@ -9,7 +9,7 @@ from tools.routes import AppRoute
 
 
 @pytest.fixture(params=settings.browsers)
-def page(request: SubRequest, playwright: Playwright) -> Page:
+def page(request: SubRequest, playwright: Playwright ) -> Page:
     yield from initialize_playwright_page(playwright, request.node.name, browser_type=request.param)
 
 
