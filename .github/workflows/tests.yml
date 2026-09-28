@@ -5,15 +5,16 @@ on:
     branches:
       - main
   pull_request:
-      branches:
-        - main
+    branches:
+      - main
+
 jobs:
   run-tests:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -28,44 +29,45 @@ jobs:
 
       - name: Run Playwright tests with pytest and generate Allure results
         run: |
-          pytest -m regression --alluredir=./allure-results --numprocesses 2 --reruns 2 --reruns-delay 2
+          pytest -m regression --alluredir=allure-results --numprocesses 2
 
-      - name: Get Allure history
-        uses: actions/checkout@v3
+      - name: Upload Allure results
         if: always()
-        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+
+
+  publish-report:
+    if: always()
+    needs: [ run-tests ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: gh-pages
 
-      - name: Install Allure CLI
-        if: always()
-        run: |
-          curl -L -o allure.tgz https://github.com/allure-framework/allure2/releases/download/2.30.0/allure-2.30.0.tgz
-          tar -zxf allure.tgz
+      - name: Download Allure results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
 
-      - name: Copy Allure history from gh-pages
-        if: always()
-        run: |
-          if [ -d gh-pages/history ]; then
-            mkdir -p allure-results && cp -r gh-pages/history allure-results/history
-          fi
-
-      - name: Remove large attachments
-        if: always()
-        run: |
-          if [ -d allure-results ]; then
-            find allure-results \( -name "*.zip" -o -name "*.webm" \) -size +50M -delete || true
-          fi
-
-      - name: Generate Allure report
-        if: always()
-        run: ./allure-2.30.0/bin/allure generate allure-results --clean -o site
-
-      - name: Deploy report to Github Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Generates Allure Report with history
+        uses: simple-elf/allure-report-action@v1.7
         if: always()
         with:
-          PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: site
+          allure_results: allure-results
+          allure_history: allure-history
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history
