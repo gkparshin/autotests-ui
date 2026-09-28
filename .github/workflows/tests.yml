@@ -38,19 +38,33 @@ jobs:
           ref: gh-pages
           path: gh-pages
 
-      - name: Allure Report action from marketplace
-        uses: simple-elf/allure-report-action@master
+      - name: Install Allure CLI
         if: always()
-        with:
-          allure-results: allure-results
-          allure-history: allure-history
+        run: |
+          curl -L -o allure.tgz https://github.com/allure-framework/allure2/releases/download/2.30.0/allure-2.30.0.tgz
+          tar -zxf allure.tgz
+
+      - name: Copy Allure history from gh-pages
+        if: always()
+        run: |
+          if [ -d gh-pages/history ]; then
+            mkdir -p allure-results && cp -r gh-pages/history allure-results/history
+          fi
+
+      - name: Remove large attachments
+        if: always()
+        run: |
+          if [ -d allure-results ]; then
+            find allure-results \( -name "*.zip" -o -name "*.webm" \) -size +50M -delete || true
+          fi
+
+      - name: Generate Allure report
+        if: always()
+        run: ./allure-2.30.0/bin/allure generate allure-results --clean -o site
 
       - name: Deploy report to Github Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_BRANCH: gh-pages
-          PUBLISH_DIR: allure-history
-      - name: Remove large attachments
-        if: always()
-        run: find allure-results -name "*.zip" -o -name "*.webm" -size +50M -delete
+          PUBLISH_DIR: site
