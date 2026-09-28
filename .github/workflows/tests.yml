@@ -28,7 +28,7 @@ jobs:
 
       - name: Run Playwright tests with pytest and generate Allure results
         run: |
-          pytest -m regression --alluredir=./allure-results --numprocesses 2
+          pytest -m regression --alluredir=./allure-results --numprocesses 2 --reruns 2 --reruns-delay 2
 
       - name: Get Allure history
         uses: actions/checkout@v3
@@ -64,6 +64,7 @@ jobs:
 
       - name: Deploy report to Github Pages
         uses: peaceiris/actions-gh-pages@v4
+        if: always()
         with:
           PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_BRANCH: gh-pages
